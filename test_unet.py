@@ -52,8 +52,6 @@ class UNet(nn.Module):
         x4, x4_feature_height, x4_feature_width = self.downsample_3(x3)
         print("\n---------------------- Downsample 4 ----------------------\n")
         x5, x5_feature_height, x5_feature_width  = self.downsample_4(x4)
-        
-        return x5
 
         print("\n---------------------- Upsample 1 ----------------------\n")
         x = self.upsample_1(x5, x4)
