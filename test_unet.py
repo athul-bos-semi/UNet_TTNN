@@ -1,8 +1,10 @@
 from unet_utils import *
-import tt_lib
+# import tt_lib
 
-# device = ttnn.open_device(2)
-device = tt_lib.device.CreateDevice(2, l1_small_size=32768, num_hw_cqs=1)
+# device = ttnn.open_device(device_id=2)
+device = ttnn.open_device(device_id=2, l1_small_size=32768)
+# device = ttnn.open_device(device_id=2, l1_small_size=32*32*5)
+# device = tt_lib.device.CreateDevice(2, l1_small_size=32768, num_hw_cqs=1)
 
 # device = ttnn.open_device_mesh(
 #         ttnn.DeviceGrid(1, 1),
@@ -32,9 +34,11 @@ class UNet(nn.Module):
         self.downsample_4 = TTNN_Down(device, image_height//8, image_width//8, 512, 1024//factor)
 
         # self.upsample_1 = Up(1024, 512 // factor, bilinear)
-        self.upsample_1 = TTNN_Up(device, 14, 14, 1024, 512 // factor, bilinear)
+        self.upsample_1 = TTNN_Up(device, 1024, 512 // factor, bilinear)
         # self.upsample_2 = Up(512, 256 // factor, bilinear)
+        self.upsample_2 = TTNN_Up(device, 512, 256 // factor, bilinear)
         # self.upsample_3 = Up(256, 128 // factor, bilinear)
+        self.upsample_3 = TTNN_Up(device, 256, 128 // factor, bilinear)
         # self.upsample_4 = Up(128, 64, bilinear)
         # self.out_conv = OutConv(64, n_classes)
 
@@ -52,12 +56,14 @@ class UNet(nn.Module):
         x4, x4_feature_height, x4_feature_width = self.downsample_3(x3)
         print("\n---------------------- Downsample 4 ----------------------\n")
         x5, x5_feature_height, x5_feature_width  = self.downsample_4(x4)
-
+        
         print("\n---------------------- Upsample 1 ----------------------\n")
-        x = self.upsample_1(x5, x4)
+        x, x_feature_height, x_feature_width = self.upsample_1(x5, x4, x5_feature_height, x5_feature_width)
+        print("\n---------------------- Upsample 2 ----------------------\n")
+        x, x_feature_height, x_feature_width = self.upsample_2(x, x3, x_feature_height, x_feature_width)
+        print("\n---------------------- Upsample 3 ----------------------\n")
+        x, x_feature_height, x_feature_width = self.upsample_3(x, x2, x_feature_height, x_feature_width)
         return x
-        # x = self.upsample_2(x, x3)
-        # x = self.upsample_3(x, x2)
         # x = self.upsample_4(x, x1)
         
         # logits = self.out_conv(x)
