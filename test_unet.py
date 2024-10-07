@@ -2,7 +2,8 @@ from unet_utils import *
 # import tt_lib
 
 # device = ttnn.open_device(device_id=2)
-device = ttnn.open_device(device_id=2, l1_small_size=32768)
+# device = ttnn.open_device(device_id=2, l1_small_size=32768)
+device = ttnn.open_device(device_id=2, l1_small_size=10240)
 # device = ttnn.open_device(device_id=2, l1_small_size=32*32*5)
 # device = tt_lib.device.CreateDevice(2, l1_small_size=32768, num_hw_cqs=1)
 
@@ -40,7 +41,10 @@ class UNet(nn.Module):
         # self.upsample_3 = Up(256, 128 // factor, bilinear)
         self.upsample_3 = TTNN_Up(device, 256, 128 // factor, bilinear)
         # self.upsample_4 = Up(128, 64, bilinear)
+        self.upsample_4 = TTNN_Up(device, 128, 64 // factor, bilinear)
+        
         # self.out_conv = OutConv(64, n_classes)
+        self.out_conv = TTNN_OutConv(device, 64 // factor, n_classes)
 
     def forward(self, x):
         x = x.permute(0,2,3,1).reshape(1,1,-1,self.in_channels)
@@ -63,12 +67,13 @@ class UNet(nn.Module):
         x, x_feature_height, x_feature_width = self.upsample_2(x, x3, x_feature_height, x_feature_width)
         print("\n---------------------- Upsample 3 ----------------------\n")
         x, x_feature_height, x_feature_width = self.upsample_3(x, x2, x_feature_height, x_feature_width)
-        return x
-        # x = self.upsample_4(x, x1)
+        print("\n---------------------- Upsample 4 ----------------------\n")
+        x, x_feature_height, x_feature_width = self.upsample_4(x, x1, x_feature_height, x_feature_width)
         
-        # logits = self.out_conv(x)
+        print("\n---------------------- Final Convolution ----------------------\n")
+        logits, output_height, output_width = self.out_conv(x, x_feature_height, x_feature_width)
         
-        # return logits
+        return logits
 
 model = UNet(3, 10, True)
 

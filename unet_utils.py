@@ -172,6 +172,7 @@ class TTNN_DoubleConv(nn.Module):
             )
         elif x.get_legacy_shape()[2] == 196 and x.get_legacy_shape()[3] == 1024:
             raise Exception("Code for Resharding for not Bilinear not written")
+        
         # try:
         #     print(x.memory_config())
         # except:
@@ -482,7 +483,8 @@ class TTNN_Up(nn.Module):
         
         # if bilinear, use the normal convolutions to reduce the number of channels
         if bilinear:
-            print("Set to bilinear")
+            # print("Set to bilinear")
+            pass
         else:
             raise Exception("ConvTranspose2d not currently supported!")
         
@@ -533,48 +535,32 @@ class TTNN_Up(nn.Module):
 
     def forward(self, x1, x2, input_height, input_width):
         print(">>> Upsample Layer Input: ", x1.get_legacy_shape())
+
+        x1 = ttnn.to_memory_config(x1, ttnn.L1_MEMORY_CONFIG)
+        x1 = ttnn.to_layout(x1, ttnn.ROW_MAJOR_LAYOUT)
+        x1 = ttnn.reshape(x1, [1,input_height,input_width,x1.get_legacy_shape()[3]])
+        print(">>> Upsample Input: ", x1.get_legacy_shape())
+        x1 = ttnn.upsample(x1, 2)
+        print(">>> Upsample Output: ", x1.get_legacy_shape())
+        x1 = ttnn.reshape(x1, [1,1,input_height*input_width*4,x1.get_legacy_shape()[3]])
+        x2 = ttnn.to_memory_config(x2, ttnn.L1_MEMORY_CONFIG)
+        x2 = ttnn.to_layout(x2, ttnn.ROW_MAJOR_LAYOUT)
+
+        x = ttnn.concat([x1,x2], dim=3)
+        print(">>> Concat Output = ", x.get_legacy_shape())
+        ttnn.deallocate(x1)
+        ttnn.deallocate(x2)
         
-        if x1.get_legacy_shape()[2] == 224 and x1.get_legacy_shape()[3] == 512:
-            x1 = ttnn.to_memory_config(x1, ttnn.L1_MEMORY_CONFIG)
-            x1 = ttnn.to_layout(x1, ttnn.ROW_MAJOR_LAYOUT)
-            x1 = ttnn.reshape(x1, [1,input_height,input_width,x1.get_legacy_shape()[3]])
-            print(">>> Upsample Input: ", x1.get_legacy_shape())
-            x1 = ttnn.upsample(x1, 2)
-            print(">>> Upsample Output: ", x1.get_legacy_shape())
-            x1 = ttnn.reshape(x1, [1,1,input_height*input_width*4,x1.get_legacy_shape()[3]])
-            # print()
-            # reshard_shard_spec = ttnn.ShardSpec(
-            #     ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,2)),ttnn.CoreRange((0,3), (0,3))}),
-            #     [32,512],
-            #     ttnn.ShardOrientation.COL_MAJOR,
-            #     False,
-            # )
-            # reshard_mem_config = ttnn.MemoryConfig(
-            #     ttnn.TensorMemoryLayout.HEIGHT_SHARDED, ttnn.BufferType.L1, reshard_shard_spec
-            # )
-            # x1 = ttnn.to_memory_config(x1, reshard_mem_config)
-            # print(">>> Resharded for concat")
-            x2 = ttnn.to_memory_config(x2, ttnn.L1_MEMORY_CONFIG)
-            x2 = ttnn.to_layout(x2, ttnn.ROW_MAJOR_LAYOUT)
-            # print(x1.memory_config())
-            # print(x2.memory_config())
-
-            # print(x1.get_legacy_shape(), x1.get_layout())
-            # print(x2.get_legacy_shape(), x2.get_layout())
-            x = ttnn.concat([x1,x2], dim=3)
-            ttnn.deallocate(x1)
-            ttnn.deallocate(x2)
-
+        if x.get_legacy_shape()[2] == 784 and x.get_legacy_shape()[3] == 1024:
             # print(x.memory_config())
             # x = ttnn.to_memory_config(x, ttnn.L1_MEMORY_CONFIG)
             # x = ttnn.to_layout(x, ttnn.TILE_LAYOUT)
+            # core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,2)), ttnn.CoreRange((0,3), (0,3))}), [32,1024]
+            # core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,5)), ttnn.CoreRange((0,6), (1,6))}), [32,512]
+            core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (6,7))}), [128,128]
             reshard_shard_spec = ttnn.ShardSpec(
-                # ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,2)), ttnn.CoreRange((0,3), (0,3))}),
-                # [32,1024],
-                # ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,5)), ttnn.CoreRange((0,6), (1,6))}),
-                # [32,512],
-                ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (6,7))}),
-                [128,128],
+                core_grid_used,
+                shard_shape_used,
                 ttnn.ShardOrientation.COL_MAJOR,
                 False,
             )
@@ -585,60 +571,12 @@ class TTNN_Up(nn.Module):
             print(">>> Resharded for Convolution")
             # print(x.memory_config())
         
-        elif x1.get_legacy_shape()[2] == 896 and x1.get_legacy_shape()[3] == 256:
-            x1 = ttnn.to_memory_config(x1, ttnn.L1_MEMORY_CONFIG)
-            x1 = ttnn.to_layout(x1, ttnn.ROW_MAJOR_LAYOUT)
-            x1 = ttnn.reshape(x1, [1,input_height,input_width,x1.get_legacy_shape()[3]])
-            print(">>> Upsample Input: ", x1.get_legacy_shape())
-            x1 = ttnn.upsample(x1, 2)
-            print(">>> Upsample Output: ", x1.get_legacy_shape())
-            x1 = ttnn.reshape(x1, [1,1,input_height*input_width*4,x1.get_legacy_shape()[3]])
-            x2 = ttnn.to_memory_config(x2, ttnn.L1_MEMORY_CONFIG)
-            x2 = ttnn.to_layout(x2, ttnn.ROW_MAJOR_LAYOUT)
-
-            x = ttnn.concat([x1,x2], dim=3)
-            ttnn.deallocate(x1)
-            ttnn.deallocate(x2)
-
-            reshard_shard_spec = ttnn.ShardSpec(
-                ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (6,3))}),
-                [448,128],
-                ttnn.ShardOrientation.COL_MAJOR,
-                False,
-            )
-            reshard_mem_config = ttnn.MemoryConfig(
-                ttnn.TensorMemoryLayout.BLOCK_SHARDED, ttnn.BufferType.L1, reshard_shard_spec
-            )
-            x = ttnn.to_memory_config(x, reshard_mem_config)
-            print(">>> Resharded for Convolution")
-
-        elif x1.get_legacy_shape()[2] == 3136 and x1.get_legacy_shape()[3] == 128:
-            x1 = ttnn.to_memory_config(x1, ttnn.L1_MEMORY_CONFIG)
-            x1 = ttnn.to_layout(x1, ttnn.ROW_MAJOR_LAYOUT)
-            x1 = ttnn.reshape(x1, [1,input_height,input_width,x1.get_legacy_shape()[3]])
-            print(">>> Upsample Input: ", x1.get_legacy_shape())
-            x1 = ttnn.upsample(x1, 2)
-            print(">>> Upsample Output: ", x1.get_legacy_shape())
-            x1 = ttnn.reshape(x1, [1,1,input_height*input_width*4,x1.get_legacy_shape()[3]])
-            x2 = ttnn.to_memory_config(x2, ttnn.L1_MEMORY_CONFIG)
-            x2 = ttnn.to_layout(x2, ttnn.ROW_MAJOR_LAYOUT)
-
-            print(x2.get_legacy_shape())
-            x = ttnn.concat([x1,x2], dim=3)
-            print(">>> Concat Output = ", x.get_legacy_shape())
-            ttnn.deallocate(x1)
-            ttnn.deallocate(x2)
-
-            print(x.memory_config())
-            # Shape([1, 1, 12544, 256])
-            core_grid_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,6))}) # [224,256]
-            # core_grid_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,7))}) # [196,256]
-            # core_grid_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (6,6))}) # [256,256]
+        elif x.get_legacy_shape()[2] == 3136 and x.get_legacy_shape()[3] == 512:
+            core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (6,3))}), [448,128]
+            # core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (6,7))}), [224,128]
             reshard_shard_spec = ttnn.ShardSpec(
                 core_grid_used,
-                [224,256],
-                # [196,256],
-                # [256,256],
+                shard_shape_used,
                 ttnn.ShardOrientation.COL_MAJOR,
                 False,
             )
@@ -647,7 +585,25 @@ class TTNN_Up(nn.Module):
             )
             x = ttnn.to_memory_config(x, reshard_mem_config)
             print(">>> Resharded for Convolution")
-            print(x.memory_config())
+
+        elif x.get_legacy_shape()[2] == 12544 and x.get_legacy_shape()[3] == 256:
+            # print(x.memory_config())
+            core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,6))}), [224,256]
+            # core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,7))}), [196,256]
+            # core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (6,6))}), [256,256]
+            # core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,7))}), [192,256]
+            reshard_shard_spec = ttnn.ShardSpec(
+                core_grid_used,
+                shard_shape_used,
+                ttnn.ShardOrientation.COL_MAJOR,
+                False,
+            )
+            reshard_mem_config = ttnn.MemoryConfig(
+                ttnn.TensorMemoryLayout.HEIGHT_SHARDED, ttnn.BufferType.L1, reshard_shard_spec
+            )
+            x = ttnn.to_memory_config(x, reshard_mem_config)
+            print(">>> Resharded for Convolution")
+            # print(x.memory_config())
             # x = ttnn.to_layout(x, ttnn.TILE_LAYOUT)
             # self.conv1_weight_tensor = ttnn.to_layout(self.conv1_weight_tensor, ttnn.TILE_LAYOUT)
             self.conv1_config = ttnn.Conv2dConfig(
@@ -672,7 +628,48 @@ class TTNN_Up(nn.Module):
                 reallocate_halo_output=True,
             )
 
+        elif x.get_legacy_shape()[2] == 50176 and x.get_legacy_shape()[3] == 128:
+            # print(x.memory_config())
+            # core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (6,6))}), [1024,128]
+            # core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,6))}), [896,128]
+            core_grid_used, shard_shape_used = ttnn.CoreRangeSet({ttnn.CoreRange((0,0), (7,7))}), [800,128] # [784,128]
+            reshard_shard_spec = ttnn.ShardSpec(
+                core_grid_used,
+                shard_shape_used,
+                ttnn.ShardOrientation.COL_MAJOR,
+                False,
+            )
+            reshard_mem_config = ttnn.MemoryConfig(
+                ttnn.TensorMemoryLayout.HEIGHT_SHARDED, ttnn.BufferType.L1, reshard_shard_spec
+            )
+            x = ttnn.to_memory_config(x, reshard_mem_config)
+            print(">>> Resharded for Convolution")
+            # print(x.memory_config())
+
+            self.conv1_config = ttnn.Conv2dConfig(
+                dtype=ttnn.bfloat16,
+                # weights_dtype=ttnn.bfloat8_b,
+                weights_dtype=ttnn.bfloat16,
+                math_fidelity=ttnn.MathFidelity.LoFi,
+                # height_sharding=True,
+                input_channels_alignment=16 if self.conv1_use_shallow_conv_variant else 32,
+                fp32_dest_acc_enabled=False,
+                activation="relu",
+                deallocate_activation=True,
+                reshard_if_not_optimal=False,
+                transpose_shards=False,
+                packer_l1_accum_enabled=True if self.device_name == "wormhole_b0" else False,
+                act_block_h_override=32,
+                enable_act_double_buffer=False,
+                enable_split_reader=False,
+                enable_subblock_padding=False,
+                core_grid=core_grid_used,
+                override_sharding_config=True,
+                reallocate_halo_output=True,
+            )
+
         print("First Conv Input = ", x.get_legacy_shape())
+        # print("Weight Shape = ", self.conv1_weight_tensor.get_legacy_shape())
         x, feature_height, feature_width, self.conv1_weight_tensor, self.conv1_bias_tensor = ttnn.conv2d(
             input_tensor=x,
             weight_tensor=self.conv1_weight_tensor,
@@ -718,19 +715,6 @@ class TTNN_Up(nn.Module):
         print(">>> Upsampling Output: ", x.get_legacy_shape())
 
         return x, feature_height, feature_width
-        
-        # input is NCHW
-        diffY = x2.size()[2] - x1.size()[2]
-        diffX = x2.size()[3] - x1.size()[3]
-
-        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
-                        diffY // 2, diffY - diffY // 2])
-        # if you have padding issues, see
-        # https://github.com/HaiyongJiang/U-Net-Pytorch-Unstructured-Buggy/commit/0e854509c2cea854e247a9c615f175f76fbb2e3a
-        # https://github.com/xiaopeng-liao/Pytorch-UNet/commit/8ebac70e633bac59fc22bb5195e513d5832fb3bd
-        x = torch.cat([x2, x1], dim=1)
-        return self.conv(x)
-
 
 class OutConv(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -739,3 +723,61 @@ class OutConv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
+
+class TTNN_OutConv(nn.Module):
+    def __init__(self, device, in_channels, out_channels):
+        super(TTNN_OutConv, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.device = device
+        self.device_name = "wormhole_b0" # if "wormhole_b0" in os.environ.get("ARCH_NAME", os.environ.get("TT_ARCH_NAME", "")).lower() else "grayskull"
+
+        # Convolution Weight Shape = [out_channels, in_channels, kernel_height, kernel_width]
+        self.conv_weight_tensor = torch.randn(self.out_channels, self.in_channels, 1, 1, dtype=torch.bfloat16)
+        # self.conv_weight_tensor = self.conv_weight_tensor.permute(2,3,0,1).reshape(1,1,-1,self.in_channels)
+        self.conv_weight_tensor = ttnn.from_torch(self.conv_weight_tensor, dtype=ttnn.bfloat16)
+        # self.conv_bias_tensor = torch.zeros(self.out_channels,dtype=ttnn.bfloat16)
+        # self.conv_bias_tensor = ttnn.from_torch(self.conv_bias_tensor)
+        self.conv_bias_tensor = None
+        self.conv_use_shallow_conv_variant = False
+        self.conv_config = ttnn.Conv2dConfig(
+            dtype=ttnn.bfloat16,
+            weights_dtype=ttnn.bfloat16,
+            math_fidelity=ttnn.MathFidelity.LoFi,
+            # height_sharding=True,
+            input_channels_alignment=16 if self.conv_use_shallow_conv_variant else 32,
+            fp32_dest_acc_enabled=False,
+            activation="relu",
+            deallocate_activation=True,
+            reshard_if_not_optimal=False,
+            transpose_shards=False,
+            packer_l1_accum_enabled=True if self.device_name == "wormhole_b0" else False,
+            act_block_h_override=32,
+        )
+
+    def forward(self, x, feature_height, feature_width):
+        print(">>> Out Convolution Input: ", x.get_legacy_shape())
+        # print(x.memory_config())
+        out, feature_height, feature_width, self.conv_weight_tensor, self.conv_bias_tensor = ttnn.conv2d(
+            input_tensor=x,
+            weight_tensor=self.conv_weight_tensor,
+            device=self.device,
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            batch_size=1,
+            input_height=feature_height,
+            input_width=feature_width,
+            kernel_size=(1, 1),
+            stride=(1, 1),
+            padding=(0, 0),
+            dilation=(1,1),
+            groups=1,
+            bias_tensor=self.conv_bias_tensor,
+            conv_config=self.conv_config,
+            conv_op_cache={},
+            debug=False,
+        )
+
+        print(">>> Out Convolution Output: ", out.get_legacy_shape())
+
+        return out, feature_height, feature_width
