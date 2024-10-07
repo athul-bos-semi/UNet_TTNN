@@ -584,49 +584,6 @@ class TTNN_Up(nn.Module):
             x = ttnn.to_memory_config(x, reshard_mem_config)
             print(">>> Resharded for Convolution")
             # print(x.memory_config())
-
-            print("First Conv Input = ", x.get_legacy_shape())
-            x, feature_height, feature_width, self.conv1_weight_tensor, self.conv1_bias_tensor = ttnn.conv2d(
-                input_tensor=x,
-                weight_tensor=self.conv1_weight_tensor,
-                device=self.device,
-                in_channels=self.in_channels,
-                out_channels=self.mid_channels,
-                batch_size=1,
-                input_height=input_height * 2,
-                input_width=input_width * 2,
-                kernel_size=(3, 3),
-                stride=(1, 1),
-                padding=(1, 1),
-                dilation=(1,1),
-                groups=1,
-                bias_tensor=self.conv1_bias_tensor,
-                conv_config=self.conv1_config,
-                conv_op_cache={},
-                debug=False,
-            )
-            # print("First Conv Output = ", x.get_legacy_shape())
-
-            print("Second Conv Input = ", x.get_legacy_shape())
-            x, feature_height, feature_width, self.conv1_weight_tensor, self.conv1_bias_tensor = ttnn.conv2d(
-                input_tensor=x,
-                weight_tensor=self.conv2_weight_tensor,
-                device=self.device,
-                in_channels=self.mid_channels,
-                out_channels=self.out_channels,
-                batch_size=1,
-                input_height=feature_height,
-                input_width=feature_width,
-                kernel_size=(3, 3),
-                stride=(1, 1),
-                padding=(1, 1),
-                dilation=(1,1),
-                groups=1,
-                bias_tensor=self.conv1_bias_tensor,
-                conv_config=self.conv1_config,
-                conv_op_cache={},
-                debug=False,
-            )
         
         elif x1.get_legacy_shape()[2] == 896 and x1.get_legacy_shape()[3] == 256:
             x1 = ttnn.to_memory_config(x1, ttnn.L1_MEMORY_CONFIG)
@@ -655,48 +612,6 @@ class TTNN_Up(nn.Module):
             x = ttnn.to_memory_config(x, reshard_mem_config)
             print(">>> Resharded for Convolution")
 
-            print("First Conv Input = ", x.get_legacy_shape())
-            x, feature_height, feature_width, self.conv1_weight_tensor, self.conv1_bias_tensor = ttnn.conv2d(
-                input_tensor=x,
-                weight_tensor=self.conv1_weight_tensor,
-                device=self.device,
-                in_channels=self.in_channels,
-                out_channels=self.mid_channels,
-                batch_size=1,
-                input_height=input_height * 2,
-                input_width=input_width * 2,
-                kernel_size=(3, 3),
-                stride=(1, 1),
-                padding=(1, 1),
-                dilation=(1,1),
-                groups=1,
-                bias_tensor=self.conv1_bias_tensor,
-                conv_config=self.conv1_config,
-                conv_op_cache={},
-                debug=False,
-            )
-
-            print("Second Conv Input = ", x.get_legacy_shape())
-            x, feature_height, feature_width, self.conv1_weight_tensor, self.conv1_bias_tensor = ttnn.conv2d(
-                input_tensor=x,
-                weight_tensor=self.conv2_weight_tensor,
-                device=self.device,
-                in_channels=self.mid_channels,
-                out_channels=self.out_channels,
-                batch_size=1,
-                input_height=feature_height,
-                input_width=feature_width,
-                kernel_size=(3, 3),
-                stride=(1, 1),
-                padding=(1, 1),
-                dilation=(1,1),
-                groups=1,
-                bias_tensor=self.conv1_bias_tensor,
-                conv_config=self.conv1_config,
-                conv_op_cache={},
-                debug=False,
-            )
-        
         elif x1.get_legacy_shape()[2] == 3136 and x1.get_legacy_shape()[3] == 128:
             x1 = ttnn.to_memory_config(x1, ttnn.L1_MEMORY_CONFIG)
             x1 = ttnn.to_layout(x1, ttnn.ROW_MAJOR_LAYOUT)
@@ -757,47 +672,47 @@ class TTNN_Up(nn.Module):
                 reallocate_halo_output=True,
             )
 
-            print("First Conv Input = ", x.get_legacy_shape())
-            x, feature_height, feature_width, self.conv1_weight_tensor, self.conv1_bias_tensor = ttnn.conv2d(
-                input_tensor=x,
-                weight_tensor=self.conv1_weight_tensor,
-                device=self.device,
-                in_channels=self.in_channels,
-                out_channels=self.mid_channels,
-                batch_size=1,
-                input_height=input_height * 2,
-                input_width=input_width * 2,
-                kernel_size=(3, 3),
-                stride=(1, 1),
-                padding=(1, 1),
-                dilation=(1,1),
-                groups=1,
-                bias_tensor=self.conv1_bias_tensor,
-                conv_config=self.conv1_config,
-                conv_op_cache={},
-                debug=False,
-            )
+        print("First Conv Input = ", x.get_legacy_shape())
+        x, feature_height, feature_width, self.conv1_weight_tensor, self.conv1_bias_tensor = ttnn.conv2d(
+            input_tensor=x,
+            weight_tensor=self.conv1_weight_tensor,
+            device=self.device,
+            in_channels=self.in_channels,
+            out_channels=self.mid_channels,
+            batch_size=1,
+            input_height=input_height * 2,
+            input_width=input_width * 2,
+            kernel_size=(3, 3),
+            stride=(1, 1),
+            padding=(1, 1),
+            dilation=(1,1),
+            groups=1,
+            bias_tensor=self.conv1_bias_tensor,
+            conv_config=self.conv1_config,
+            conv_op_cache={},
+            debug=False,
+        )
 
-            print("Second Conv Input = ", x.get_legacy_shape())
-            x, feature_height, feature_width, self.conv1_weight_tensor, self.conv1_bias_tensor = ttnn.conv2d(
-                input_tensor=x,
-                weight_tensor=self.conv2_weight_tensor,
-                device=self.device,
-                in_channels=self.mid_channels,
-                out_channels=self.out_channels,
-                batch_size=1,
-                input_height=feature_height,
-                input_width=feature_width,
-                kernel_size=(3, 3),
-                stride=(1, 1),
-                padding=(1, 1),
-                dilation=(1,1),
-                groups=1,
-                bias_tensor=self.conv1_bias_tensor,
-                conv_config=self.conv1_config,
-                conv_op_cache={},
-                debug=False,
-            )
+        print("Second Conv Input = ", x.get_legacy_shape())
+        x, feature_height, feature_width, self.conv1_weight_tensor, self.conv1_bias_tensor = ttnn.conv2d(
+            input_tensor=x,
+            weight_tensor=self.conv2_weight_tensor,
+            device=self.device,
+            in_channels=self.mid_channels,
+            out_channels=self.out_channels,
+            batch_size=1,
+            input_height=feature_height,
+            input_width=feature_width,
+            kernel_size=(3, 3),
+            stride=(1, 1),
+            padding=(1, 1),
+            dilation=(1,1),
+            groups=1,
+            bias_tensor=self.conv1_bias_tensor,
+            conv_config=self.conv1_config,
+            conv_op_cache={},
+            debug=False,
+        )
 
         
         print(">>> Upsampling Output: ", x.get_legacy_shape())
